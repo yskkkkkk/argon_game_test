@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Space Grotesk', 'Noto Sans KR', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Noto Sans KR', monospace;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    background-color: #F4F1EA;
+    color: #141413;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  h1, h2, .font-display {
+    font-family: var(--font-display);
+  }
+
+  code, pre, .font-mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tactile Drafting Paper Dot Grid */
+.bg-drafting-grid {
+  background-color: #F4F1EA;
+  background-image: radial-gradient(#141413 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+/* Hard Brutalist Mechanical Shadow */
+.shadow-mechanical {
+  box-shadow: 4px 4px 0px #141413;
+}
+
+.shadow-mechanical-sm {
+  box-shadow: 2px 2px 0px #141413;
+}
+
+.shadow-mechanical-lg {
+  box-shadow: 6px 6px 0px #141413;
+}
+
+/* Tactile Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #E6E2D8;
+  border-left: 1px solid #141413;
+}
+::-webkit-scrollbar-thumb {
+  background: #141413;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #FF4F00;
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Project: ARGON - Cyber OS Escape",
+  "description": "사이버펑크 멀티 윈도우 해킹 방탈출 게임. 가상 해커 OS 데스크톱에서 창 흔들기, X-Ray 투시 렌즈 겹치기, 마이크 음파 냉각, 리사이즈 주파수 동기화, 레이저 정렬 터미널 해킹으로 5자리 마스터 암호를 해독하세요.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
