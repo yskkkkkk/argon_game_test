@@ -38,7 +38,18 @@ export const BlueprintModule: React.FC<BlueprintModuleProps> = ({
   }, [onCleared]);
 
   useEffect(() => {
+    secretCoordRef.current = {
+      x: 120 + (parseInt(digit, 10) % 4) * 50,
+      y: 76 + (parseInt(digit, 10) % 3) * 32,
+    };
+  }, [digit]);
+
+  useEffect(() => {
+    const wasCleared = clearedRef.current;
     clearedRef.current = isCleared;
+    if (!isCleared && wasCleared) {
+      holdTimerRef.current = 0;
+    }
   }, [isCleared]);
 
   useEffect(() => {
@@ -65,10 +76,6 @@ export const BlueprintModule: React.FC<BlueprintModuleProps> = ({
         height: canvasBounds.height,
       };
 
-      if (onReportBlueprintGeometry) {
-        onReportBlueprintGeometry(blueprintViewportRect, secretCoordRef.current);
-      }
-
       const scaleX = w / Math.max(1, canvasBounds.width);
       const scaleY = h / Math.max(1, canvasBounds.height);
 
@@ -76,6 +83,10 @@ export const BlueprintModule: React.FC<BlueprintModuleProps> = ({
         x: secretCoordRef.current.x / scaleX,
         y: secretCoordRef.current.y / scaleY,
       };
+
+      if (onReportBlueprintGeometry) {
+        onReportBlueprintGeometry(blueprintViewportRect, targetViewportPos);
+      }
 
       // 1. Check In-Page Lens Overlap
       const inPageOverlap = inPageLensRect

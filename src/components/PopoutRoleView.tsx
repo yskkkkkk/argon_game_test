@@ -32,6 +32,25 @@ export const PopoutRoleView: React.FC<PopoutRoleViewProps> = ({ role }) => {
       // Ignore if BroadcastChannel unsupported
     }
 
+    const sendUnload = () => {
+      if (bc) {
+        bc.postMessage({
+          role,
+          screenX: -99999,
+          screenY: -99999,
+          outerWidth: 0,
+          outerHeight: 0,
+          innerWidth: 0,
+          innerHeight: 0,
+          chromeOffsetX: 0,
+          chromeOffsetY: 0,
+          timestamp: performance.now(),
+        } satisfies ScreenGeometryPayload);
+      }
+    };
+    window.addEventListener('beforeunload', sendUnload);
+    window.addEventListener('pagehide', sendUnload);
+
     let animId = 0;
     const render = (now: number) => {
       const chromeOffsetX = Math.max(0, (window.outerWidth - window.innerWidth) / 2);
@@ -62,6 +81,14 @@ export const PopoutRoleView: React.FC<PopoutRoleViewProps> = ({ role }) => {
 
       const canvas = canvasRef.current;
       if (canvas) {
+        const canvasBounds = canvas.getBoundingClientRect();
+        const targetW = Math.max(1, Math.round(canvasBounds.width));
+        const targetH = Math.max(1, Math.round(canvasBounds.height));
+        if (canvas.width !== targetW || canvas.height !== targetH) {
+          canvas.width = targetW;
+          canvas.height = targetH;
+        }
+
         const ctx = canvas.getContext('2d');
         if (ctx) {
           const w = canvas.width;
@@ -96,13 +123,15 @@ export const PopoutRoleView: React.FC<PopoutRoleViewProps> = ({ role }) => {
 
               const myContentScreenX = window.screenX + chromeOffsetX;
               const myContentScreenY = window.screenY + chromeOffsetY;
+              const myCanvasScreenX = myContentScreenX + canvasBounds.left;
+              const myCanvasScreenY = myContentScreenY + canvasBounds.top;
 
               // Calculate where the main window's secret stamp projects into THIS popup's canvas
               const secretScreenX = bpScreenX + main.secretCoordLocal.x;
               const secretScreenY = bpScreenY + main.secretCoordLocal.y;
 
-              const localStampX = secretScreenX - myContentScreenX;
-              const localStampY = secretScreenY - myContentScreenY;
+              const localStampX = secretScreenX - myCanvasScreenX;
+              const localStampY = secretScreenY - myCanvasScreenY;
 
               const bpScreenRect: Rect = {
                 x: bpScreenX,
@@ -203,6 +232,9 @@ export const PopoutRoleView: React.FC<PopoutRoleViewProps> = ({ role }) => {
     animId = requestAnimationFrame(render);
     return () => {
       cancelAnimationFrame(animId);
+      window.removeEventListener('beforeunload', sendUnload);
+      window.removeEventListener('pagehide', sendUnload);
+      sendUnload();
       if (bc) bc.close();
     };
   }, [role]);

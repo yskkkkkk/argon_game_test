@@ -36,9 +36,14 @@ export const DimensionalTunerModule: React.FC<DimensionalTunerModuleProps> = ({
   }, [onCleared]);
 
   useEffect(() => {
+    const wasCleared = clearedRef.current;
     clearedRef.current = isCleared;
     if (isCleared) {
+      holdTimeRef.current = HOLD_DURATION_SEC;
       setHoldProgress(100);
+    } else if (wasCleared) {
+      holdTimeRef.current = 0;
+      setHoldProgress(0);
     }
   }, [isCleared]);
 

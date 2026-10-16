@@ -34,10 +34,15 @@ export const OverheatedCoreModule: React.FC<OverheatedCoreModuleProps> = ({
   const mediaStreamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
+    const wasCleared = clearedRef.current;
     clearedRef.current = isCleared;
     if (isCleared) {
       tempRef.current = 0;
       setTemperature(0);
+    } else if (wasCleared) {
+      tempRef.current = 100.0;
+      setTemperature(100.0);
+      setFanRpm(240);
     }
   }, [isCleared]);
 

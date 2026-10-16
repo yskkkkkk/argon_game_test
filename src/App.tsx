@@ -184,6 +184,7 @@ function MainVaultWorkspace() {
   const [unlockError, setUnlockError] = useState<boolean>(false);
   const [isSystemUnlocked, setIsSystemUnlocked] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
+  const [gameSessionId, setGameSessionId] = useState<number>(0);
 
   const [windows, setWindows] = useState<Record<string, WindowState>>(() =>
     createInitialWindows(window.innerWidth, window.innerHeight)
@@ -204,6 +205,18 @@ function MainVaultWorkspace() {
     viewportRect: { x: 405, y: 92, width: 450, height: 250 },
     secretCoord: { x: 170, y: 110 },
   });
+  const passcodeDigitsRef = useRef<string[]>(passcodeDigits);
+  const terminalWinRef = useRef<WindowState>(windows.module5_terminal);
+  const lastLensSyncTimeRef = useRef<number>(0);
+  const lastLaserSyncTimeRef = useRef<number>(0);
+
+  useEffect(() => {
+    passcodeDigitsRef.current = passcodeDigits;
+  }, [passcodeDigits]);
+
+  useEffect(() => {
+    terminalWinRef.current = windows.module5_terminal;
+  }, [windows.module5_terminal]);
 
   useEffect(() => {
     document.body.dataset.state = isSystemUnlocked ? 'gameover' : 'playing';
@@ -240,14 +253,26 @@ function MainVaultWorkspace() {
         if (!payload) return;
 
         if (payload.role === 'lens') {
-          setRemoteLensPopupRect({
-            x: payload.screenX + payload.chromeOffsetX,
-            y: payload.screenY + payload.chromeOffsetY,
-            width: payload.innerWidth,
-            height: payload.innerHeight,
-          });
+          if (payload.innerWidth <= 0 || payload.innerHeight <= 0) {
+            lastLensSyncTimeRef.current = 0;
+            setRemoteLensPopupRect(null);
+          } else {
+            lastLensSyncTimeRef.current = performance.now();
+            setRemoteLensPopupRect({
+              x: payload.screenX + payload.chromeOffsetX,
+              y: payload.screenY + payload.chromeOffsetY,
+              width: payload.innerWidth,
+              height: payload.innerHeight,
+            });
+          }
         } else if (payload.role === 'laser') {
-          setRemoteLaserPopupState(payload);
+          if (payload.outerWidth <= 0 || payload.outerHeight <= 0) {
+            lastLaserSyncTimeRef.current = 0;
+            setRemoteLaserPopupState(null);
+          } else {
+            lastLaserSyncTimeRef.current = performance.now();
+            setRemoteLaserPopupState(payload);
+          }
         }
       };
     } catch {
@@ -270,12 +295,22 @@ function MainVaultWorkspace() {
         shakeImpulseRef.current.dy += deltaScreenY * 1.35;
       }
 
+      // Expire stale pop-out windows if closed unexpectedly
+      if (lastLensSyncTimeRef.current > 0 && now - lastLensSyncTimeRef.current > 800) {
+        lastLensSyncTimeRef.current = 0;
+        setRemoteLensPopupRect(null);
+      }
+      if (lastLaserSyncTimeRef.current > 0 && now - lastLaserSyncTimeRef.current > 800) {
+        lastLaserSyncTimeRef.current = 0;
+        setRemoteLaserPopupState(null);
+      }
+
       // 2. Broadcast Main Window screen coordinates & Blueprint / Receiver coordinates at 60Hz
       if (bc) {
         const chromeOffsetX = Math.max(0, (window.outerWidth - window.innerWidth) / 2);
         const chromeOffsetY = Math.max(0, window.outerHeight - window.innerHeight);
 
-        const termWin = windows.module5_terminal;
+        const termWin = terminalWinRef.current;
         const mainPayload: ScreenGeometryPayload = {
           role: 'main',
           screenX: window.screenX,
@@ -291,7 +326,7 @@ function MainVaultWorkspace() {
             x: termWin.x,
             y: termWin.y + termWin.height * 0.5,
           },
-          secretDigit2: passcodeDigits[1],
+          secretDigit2: passcodeDigitsRef.current[1],
           secretCoordLocal: blueprintGeoRef.current.secretCoord,
           timestamp: now,
         };
@@ -306,7 +341,7 @@ function MainVaultWorkspace() {
       cancelAnimationFrame(animId);
       if (bc) bc.close();
     };
-  }, [passcodeDigits, windows.module5_terminal]);
+  }, []);
 
   // Sync window cleared badges
   useEffect(() => {
@@ -430,6 +465,8 @@ function MainVaultWorkspace() {
   const handleRestartGame = () => {
     cyberAudio.playClick(1.2);
     const newDigits = generatePasscode();
+    shakeImpulseRef.current = { dx: 0, dy: 0 };
+    setGameSessionId((prev) => prev + 1);
     setPasscodeDigits(newDigits);
     setClearedModules([false, false, false, false, false]);
     setKeypadDigits(['', '', '', '', '']);
@@ -703,6 +740,7 @@ function MainVaultWorkspace() {
           onClose={closeWindow}
         >
           <DustySensorModule
+            key={`module1-${gameSessionId}`}
             digit={passcodeDigits[0]}
             shakeImpulseRef={shakeImpulseRef}
             isCleared={clearedModules[0]}
@@ -719,6 +757,7 @@ function MainVaultWorkspace() {
           onClose={closeWindow}
         >
           <BlueprintModule
+            key={`module2-${gameSessionId}`}
             digit={passcodeDigits[1]}
             inPageLensRect={inPageLensViewportRect}
             remotePopupScreenRect={remoteLensPopupRect}
@@ -768,6 +807,7 @@ function MainVaultWorkspace() {
           onClose={closeWindow}
         >
           <OverheatedCoreModule
+            key={`module3-${gameSessionId}`}
             digit={passcodeDigits[2]}
             isCleared={clearedModules[2]}
             onCleared={() => markModuleCleared(2)}
@@ -783,6 +823,7 @@ function MainVaultWorkspace() {
           onClose={closeWindow}
         >
           <DimensionalTunerModule
+            key={`module4-${gameSessionId}`}
             digit={passcodeDigits[3]}
             windowWidth={windows.module4.width}
             windowHeight={windows.module4.height}
@@ -842,6 +883,7 @@ function MainVaultWorkspace() {
           leftPortActive={isLaserConnected}
         >
           <SecurityTerminalModule
+            key={`module5-${gameSessionId}`}
             digit={passcodeDigits[4]}
             isPowered={isLaserConnected}
             isCleared={clearedModules[4]}

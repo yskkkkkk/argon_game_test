@@ -29,7 +29,11 @@ export const DustySensorModule: React.FC<DustySensorModuleProps> = ({
   }, [onCleared]);
 
   useEffect(() => {
+    const wasCleared = clearedFiredRef.current;
     clearedFiredRef.current = isCleared;
+    if (!isCleared && wasCleared && canvasRef.current) {
+      initParticles(canvasRef.current.width, canvasRef.current.height);
+    }
   }, [isCleared]);
 
   const initParticles = (width: number, height: number) => {
